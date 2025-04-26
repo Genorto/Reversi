@@ -7,14 +7,15 @@ CellButton::CellButton(QWidget *parent)
     : QPushButton(parent),
       value(0)
 {
-    // Убираем стандартное оформление кнопки (чтобы не рисовалась рамка и фон),
-    // либо можно оставить, если требуется.
+    // Убираем стандартное оформление и устанавливаем нужный стиль для ячейки.
+    // Здесь устанавливается фон, рамка (1px solid тёмного цвета) и отсутствие округления.
+    setStyleSheet("background-color: #B2DFDB; border: 1px solid #004D40; border-radius: 0px;");
     setFlat(true);
 }
 
 void CellButton::setValue(int val) {
     value = val;
-    update();  // перерисовать кнопку
+    update();  // перерисовываем кнопку при изменении значения
 }
 
 int CellButton::getValue() const {
@@ -22,25 +23,25 @@ int CellButton::getValue() const {
 }
 
 void CellButton::paintEvent(QPaintEvent *event) {
-    // Рисуем стандартное оформление кнопки
+    // Рисуем стандартное оформление кнопки (это нужно, если вы хотите сохранить эффект нажатия)
     QStyleOptionButton option;
     option.initFrom(this);
     QPainter p(this);
     style()->drawControl(QStyle::CE_PushButton, &option, &p, this);
 
-    // Если значения 0 – ничего не рисуем кроме стандартного оформления.
+    // Если ячейка пуста, отрисовывать ничего не нужно.
     if (value == 0)
         return;
 
     // Включаем сглаживание
     p.setRenderHint(QPainter::Antialiasing, true);
 
-    // Определяем прямоугольник, в котором будет отрисован круг
+    // Определяем прямоугольник для отрисовки диска
     QRect rect = this->rect();
-    int margin = 5; // Отступ внутри кнопки
+    int margin = 10;  // внутренний отступ; можно настроить по вкусу
     QRect circleRect = rect.adjusted(margin, margin, -margin, -margin);
 
-    // Устанавливаем цвет заливки: белый для value==1, чёрный для value==-1.
+    // Задаём цвет для фигур: value==1 – белый диск, value==-1 – чёрный
     if (value == 1)
         p.setBrush(Qt::white);
     else if (value == -1)

@@ -9,6 +9,7 @@
 GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     : QWidget(parent), gameEngine(engine)
 {
+    // Создаем основной вертикальный layout.
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Метка для отображения текущего хода.
@@ -17,13 +18,16 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     turnLabel->setStyleSheet("font-size: 16pt; color: #00695C;");
     mainLayout->addWidget(turnLabel);
 
-    // Сетка игрового поля (8×8).
+    // Создаем grid layout для игрового поля (8×8) без промежутков и отступов.
     QGridLayout *gridLayout = new QGridLayout();
+    gridLayout->setSpacing(0);
+    gridLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Создаем 64 клетки фиксированного размера (75×75)
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
-            // Создаем экземпляр CellButton вместо QPushButton.
             boardButtons[i][j] = new CellButton(this);
-            boardButtons[i][j]->setFixedSize(50, 50);
+            boardButtons[i][j]->setFixedSize(75, 75);
             boardButtons[i][j]->setStyleSheet("background-color: #B2DFDB;");
             gridLayout->addWidget(boardButtons[i][j], i, j);
             connect(boardButtons[i][j], &CellButton::clicked, this, [=](){
@@ -31,9 +35,16 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
             });
         }
     }
-    mainLayout->addLayout(gridLayout);
 
-    // Панель управления.
+    // Создаем контейнер для игрового поля и фиксируем его размер (75*8 = 600 по ширине и высоте)
+    QWidget *boardContainer = new QWidget(this);
+    boardContainer->setLayout(gridLayout);
+    boardContainer->setFixedSize(75 * BOARD_SIZE, 75 * BOARD_SIZE);
+    
+    // Добавляем контейнер в главный layout с центровкой
+    mainLayout->addWidget(boardContainer, 0, Qt::AlignCenter);
+
+    // Создаем панель управления.
     QHBoxLayout *controlLayout = new QHBoxLayout();
     QPushButton *menuButton = new QPushButton("Меню", this);
     QPushButton *undoButton = new QPushButton("Отмена хода", this);
@@ -49,14 +60,14 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
 
     setLayout(mainLayout);
 
-    // Связь кнопок управления.
+    // Настраиваем соединения для элементов управления.
     connect(menuButton, &QPushButton::clicked, this, &GameWidget::backToMenu);
     connect(undoButton, &QPushButton::clicked, this, &GameWidget::undoMove);
     connect(saveButton, &QPushButton::clicked, this, &GameWidget::saveGame);
     connect(loadButton, &QPushButton::clicked, this, &GameWidget::loadGame);
     connect(hintButton, &QPushButton::clicked, this, &GameWidget::showHint);
 
-    // Таймер для автоматического хода ИИ.
+    // Таймер для автоматического хода ИИ – интервал 1 секунда.
     botMoveTimer = new QTimer(this);
     botMoveTimer->setInterval(1000);
     connect(botMoveTimer, &QTimer::timeout, this, &GameWidget::processTurn);
@@ -125,9 +136,12 @@ void GameWidget::loadGame() {
 void GameWidget::showHint() {
     std::pair<int, int> hint = gameEngine->hintMove();
     if (hint.first != -1) {
-        // Для подсказки можно, например, временно изменить фон ячейки.
-        boardButtons[hint.first][hint.second]->setStyleSheet("background-color: #FFEB3B;");
-        QTimer::singleShot(1500, this, [=](){ updateBoard(); });
+        // Для подсказки устанавливаем стиль с нужным цветом фона (#FFEB3B),
+        // но при этом сохраняем обводку (1px solid #004D40) и border-radius: 0px.
+        boardButtons[hint.first][hint.second]->setStyleSheet(
+            "background-color: #FFEB3B; border: 1px solid #004D40; border-radius: 0px;");
+
+        QTimer::singleShot(1500, this, [=]() { updateBoard(); });
     } else {
         QMessageBox::information(this, "Подсказка", "Нет доступного хода для подсказки.");
     }
@@ -142,7 +156,7 @@ void GameWidget::updateBoard() {
     std::vector<std::pair<int, int>> legalMoves = gameEngine->getLegalMoves();
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
-            // Обновляем значение ячейки (она затем сама перерисовывается, вызывая paintEvent в CellButton)
+            // Обновляем значение ячейки - оно затем будет отрисовано самим CellButton.
             boardButtons[i][j]->setValue(gameEngine->board[i][j]);
 
             bool enable = false;
@@ -152,10 +166,10 @@ void GameWidget::updateBoard() {
                     break;
                 }
             }
-            // Разрешаем кликать по ячейке в режиме "Игрок против Бота", если это допустимый ход и сейчас ход игрока.
             boardButtons[i][j]->setEnabled(enable && (gameEngine->mode == PvB) && (gameEngine->currentPlayer == -1));
-            // Можно задать стандартный стиль.
-            boardButtons[i][j]->setStyleSheet("background-color: #B2DFDB;");
+            
+            // Обновляем стиль ячейки: устанавливаем фон, добавляем тёмную границу и убираем скругление.
+            boardButtons[i][j]->setStyleSheet("background-color: #B2DFDB; border: 1px solid #004D40; border-radius: 0px; font-size: 20pt;");
         }
     }
     updateTurnLabel();
