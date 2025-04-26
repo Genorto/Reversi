@@ -162,28 +162,95 @@ void GameEngine::newGame(Mode m, Difficulty diff) {
 }
 
 bool GameEngine::playerMove(int row, int col) {
-    if (isValidMove(board, row, col, currentPlayer)) {
-         makeMove(board, row, col, currentPlayer);
-         currentPlayer = -currentPlayer;
-         saveState();
-         return true;
+    // Получаем список допустимых ходов для текущего игрока.
+    std::vector<std::pair<int,int>> legalMoves = calculateLegalMoves(board, currentPlayer);
+
+    if (!legalMoves.empty()) {
+        // Если существуют допустимые ходы, то выполняем стандартный ход.
+        if (isValidMove(board, row, col, currentPlayer)) {
+            makeMove(board, row, col, currentPlayer);
+            currentPlayer = -currentPlayer;
+            saveState();
+            return true;
+        }
+        // Если ход выбран неверно, ничего не делаем.
+        return false;
+    } else {
+        // Допустимых ходов нет.
+        // Сначала подсчитаем, присутствуют ли фишки текущего игрока на доске.
+        int ownCount = 0;
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                if (board[i][j] == currentPlayer)
+                    ownCount++;
+            }
+        }
+        if (ownCount > 0) {
+            // Если у игрока есть свои фишки, то он не может сделать ход – пропускаем его.
+            currentPlayer = -currentPlayer;
+            saveState();
+            return false; // Ход пропущен.
+        } else {
+            // Если у игрока нет ни одной своей фишки,
+            // то он имеет право взять (перевернуть) одну фишку противника.
+            // Проверяем, что выбранная клетка занята фишкой оппонента.
+            if (board[row][col] == -currentPlayer) {
+                board[row][col] = currentPlayer;
+                currentPlayer = -currentPlayer;
+                saveState();
+                return true;
+            }
+            return false; // Если игрок не выбрал клетку с вражеской фишкой, ничего не делаем.
+        }
     }
-    return false;
 }
 
 void GameEngine::botMove() {
-    std::vector<std::pair<int, int>> legalMoves = calculateLegalMoves(board, currentPlayer);
+    // Получаем список допустимых ходов для текущего игрока.
+    std::vector<std::pair<int,int>> legalMoves = calculateLegalMoves(board, currentPlayer);
+
     if (!legalMoves.empty()) {
-         std::pair<int, int> move;
-         if (mode == PvB)
-             move = findBestMove(board, currentPlayer, aiDepth);
-         else // для режима Бот против Бота – используем среднюю глубину, равную 5
-             move = findBestMove(board, currentPlayer, 5);
-         if (move.first != -1)
-             makeMove(board, move.first, move.second, currentPlayer);
+        // Если ход возможен – выбираем лучший (с использованием алгоритма alpha‑beta).
+        std::pair<int,int> move;
+        if (mode == PvB)
+            move = findBestMove(board, currentPlayer, aiDepth);
+        else // Для режима "Бот против Бота" используем, например, среднюю глубину: 5.
+            move = findBestMove(board, currentPlayer, 5);
+
+        if (move.first != -1)
+            makeMove(board, move.first, move.second, currentPlayer);
+
+        currentPlayer = -currentPlayer;
+        saveState();
+        return;
+    } else {
+        // Допустимых ходов для бота нет.
+        int ownCount = 0;
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            for (int j = 0; j < BOARD_SIZE; j++) {
+                if (board[i][j] == currentPlayer)
+                    ownCount++;
+            }
+        }
+        if (ownCount > 0) {
+            // Если у бота есть хотя бы одна своя фишка – ход пропускается.
+            currentPlayer = -currentPlayer;
+            saveState();
+            return;
+        } else {
+            // Если у бота нет своих фишек – он переворачивает первую найденную фишку противника.
+            for (int i = 0; i < BOARD_SIZE; i++) {
+                for (int j = 0; j < BOARD_SIZE; j++) {
+                    if (board[i][j] == -currentPlayer) {
+                        board[i][j] = currentPlayer;
+                        currentPlayer = -currentPlayer;
+                        saveState();
+                        return;
+                    }
+                }
+            }
+        }
     }
-    currentPlayer = -currentPlayer;
-    saveState();
 }
 
 bool GameEngine::isGameOver() const {

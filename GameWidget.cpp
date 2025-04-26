@@ -9,7 +9,6 @@
 GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     : QWidget(parent), gameEngine(engine)
 {
-    // Создаем основной вертикальный layout.
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Метка для отображения текущего хода.
@@ -18,12 +17,11 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     turnLabel->setStyleSheet("font-size: 16pt; color: #00695C;");
     mainLayout->addWidget(turnLabel);
 
-    // Создаем grid layout для игрового поля (8×8) без промежутков и отступов.
+    // Сетка игрового поля.
     QGridLayout *gridLayout = new QGridLayout();
     gridLayout->setSpacing(0);
     gridLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Создаем 64 клетки фиксированного размера (75×75)
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             boardButtons[i][j] = new CellButton(this);
@@ -36,21 +34,19 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
         }
     }
 
-    // Создаем контейнер для игрового поля и фиксируем его размер (75*8 = 600 по ширине и высоте)
     QWidget *boardContainer = new QWidget(this);
     boardContainer->setLayout(gridLayout);
     boardContainer->setFixedSize(75 * BOARD_SIZE, 75 * BOARD_SIZE);
-    
-    // Добавляем контейнер в главный layout с центровкой
     mainLayout->addWidget(boardContainer, 0, Qt::AlignCenter);
 
-    // Создаем панель управления.
+    // Панель управления.
     QHBoxLayout *controlLayout = new QHBoxLayout();
     QPushButton *menuButton = new QPushButton("Меню", this);
     QPushButton *undoButton = new QPushButton("Отмена хода", this);
     QPushButton *saveButton = new QPushButton("Сохранить", this);
     QPushButton *loadButton = new QPushButton("Загрузить", this);
     QPushButton *hintButton = new QPushButton("Подсказка", this);
+    
     controlLayout->addWidget(menuButton);
     controlLayout->addWidget(undoButton);
     controlLayout->addWidget(saveButton);
@@ -58,16 +54,20 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     controlLayout->addWidget(hintButton);
     mainLayout->addLayout(controlLayout);
 
+    // Если выбран режим "Бот против Бота", отключаем кнопку подсказки.
+    if (gameEngine->mode == BvB) {
+        undoButton->setEnabled(false);
+        hintButton->setEnabled(false);
+    }
+
     setLayout(mainLayout);
 
-    // Настраиваем соединения для элементов управления.
     connect(menuButton, &QPushButton::clicked, this, &GameWidget::backToMenu);
     connect(undoButton, &QPushButton::clicked, this, &GameWidget::undoMove);
     connect(saveButton, &QPushButton::clicked, this, &GameWidget::saveGame);
     connect(loadButton, &QPushButton::clicked, this, &GameWidget::loadGame);
     connect(hintButton, &QPushButton::clicked, this, &GameWidget::showHint);
 
-    // Таймер для автоматического хода ИИ – интервал 1 секунда.
     botMoveTimer = new QTimer(this);
     botMoveTimer->setInterval(1000);
     connect(botMoveTimer, &QTimer::timeout, this, &GameWidget::processTurn);
