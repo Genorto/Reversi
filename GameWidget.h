@@ -1,8 +1,7 @@
 #pragma once
-
 #include <QWidget>
 #include "GameEngine.h"
-#include "CellButton.h"  // новый класс для отрисовки фишек
+#include "CellButton.h"
 
 class QLabel;
 class QTimer;
@@ -28,9 +27,7 @@ private:
     void updateBoard();
     void updateTurnLabel();
     void showResult();
-
     GameEngine *gameEngine;
-    // Используем CellButton вместо QPushButton.
     CellButton* boardButtons[BOARD_SIZE][BOARD_SIZE];
     QLabel *turnLabel;
     QTimer *botMoveTimer;

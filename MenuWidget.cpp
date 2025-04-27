@@ -5,14 +5,12 @@
 #include <QPushButton>
 #include <QVariant>
 
-MenuWidget::MenuWidget(QWidget *parent)
-    : QWidget(parent)
-{
+MenuWidget::MenuWidget(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
     
     QLabel *title = new QLabel("Реверси");
     title->setAlignment(Qt::AlignCenter);
-    title->setStyleSheet("font-size: 24pt; color: #004D40;"); // темно-бирюзовый цвет
+    title->setStyleSheet("font-size: 24pt; color: #004D40;");
     layout->addWidget(title);
     
     QLabel *modeLabel = new QLabel("Выберите режим игры:");
@@ -35,7 +33,6 @@ MenuWidget::MenuWidget(QWidget *parent)
     QPushButton *startButton = new QPushButton("Начать игру");
     layout->addWidget(startButton);
     
-    // Если выбран режим "Бот против Бота", сложность неактивна.
     connect(modeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [=](int){
         if (modeCombo->currentData().toInt() == 1)
             difficultyCombo->setEnabled(false);

@@ -6,18 +6,14 @@
 #include <QTimer>
 #include <QMessageBox>
 
-GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
-    : QWidget(parent), gameEngine(engine)
-{
+GameWidget::GameWidget(GameEngine *engine, QWidget *parent) : QWidget(parent), gameEngine(engine) {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // Метка для отображения текущего хода.
     turnLabel = new QLabel(this);
     turnLabel->setAlignment(Qt::AlignCenter);
     turnLabel->setStyleSheet("font-size: 16pt; color: #00695C;");
     mainLayout->addWidget(turnLabel);
 
-    // Сетка игрового поля.
     QGridLayout *gridLayout = new QGridLayout();
     gridLayout->setSpacing(0);
     gridLayout->setContentsMargins(0, 0, 0, 0);
@@ -39,7 +35,6 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     boardContainer->setFixedSize(75 * BOARD_SIZE, 75 * BOARD_SIZE);
     mainLayout->addWidget(boardContainer, 0, Qt::AlignCenter);
 
-    // Панель управления.
     QHBoxLayout *controlLayout = new QHBoxLayout();
     QPushButton *menuButton = new QPushButton("Меню", this);
     QPushButton *undoButton = new QPushButton("Отмена хода", this);
@@ -54,7 +49,6 @@ GameWidget::GameWidget(GameEngine *engine, QWidget *parent)
     controlLayout->addWidget(hintButton);
     mainLayout->addLayout(controlLayout);
 
-    // Если выбран режим "Бот против Бота", отключаем кнопку подсказки.
     if (gameEngine->mode == BvB) {
         undoButton->setEnabled(false);
         hintButton->setEnabled(false);
@@ -136,8 +130,6 @@ void GameWidget::loadGame() {
 void GameWidget::showHint() {
     std::pair<int, int> hint = gameEngine->hintMove();
     if (hint.first != -1) {
-        // Для подсказки устанавливаем стиль с нужным цветом фона (#FFEB3B),
-        // но при этом сохраняем обводку (1px solid #004D40) и border-radius: 0px.
         boardButtons[hint.first][hint.second]->setStyleSheet(
             "background-color: #FFEB3B; border: 1px solid #004D40; border-radius: 0px;");
 
@@ -152,11 +144,9 @@ void GameWidget::backToMenu() {
 }
 
 void GameWidget::updateBoard() {
-    // Получаем список допустимых ходов для текущего игрока.
     std::vector<std::pair<int, int>> legalMoves = gameEngine->getLegalMoves();
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
-            // Обновляем значение ячейки - оно затем будет отрисовано самим CellButton.
             boardButtons[i][j]->setValue(gameEngine->board[i][j]);
 
             bool enable = false;
@@ -167,8 +157,6 @@ void GameWidget::updateBoard() {
                 }
             }
             boardButtons[i][j]->setEnabled(enable && (gameEngine->mode == PvB) && (gameEngine->currentPlayer == -1));
-            
-            // Обновляем стиль ячейки: устанавливаем фон, добавляем тёмную границу и убираем скругление.
             boardButtons[i][j]->setStyleSheet("background-color: #B2DFDB; border: 1px solid #004D40; border-radius: 0px; font-size: 20pt;");
         }
     }
@@ -176,7 +164,6 @@ void GameWidget::updateBoard() {
 }
 
 void GameWidget::updateTurnLabel() {
-    // Если текущий игрок равен 1 – играют белые, иначе – чёрные.
     QString playerStr = (gameEngine->currentPlayer == 1) ? "белые" : "чёрные";
     turnLabel->setText("Ход: " + playerStr);
 }

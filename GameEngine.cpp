@@ -3,12 +3,10 @@
 #include <vector>
 #include <utility>
 
-// Функция проверки, что координаты находятся в пределах доски.
 static bool inBounds(int row, int col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
 }
 
-// Инициализация доски: четыре центральные фишки.
 static Board initBoard() {
     Board board;
     for (int i = 0; i < BOARD_SIZE; i++) {
@@ -21,12 +19,9 @@ static Board initBoard() {
     return board;
 }
 
-// Определяем константные массивы для направлений (все 8 направлений).
 static const int dx[8] = {-1, -1, -1,  0, 0, 1, 1, 1};
 static const int dy[8] = {-1,  0,  1, -1, 1,-1, 0, 1};
 
-// Проверка корректности хода: клетка должна быть пуста, и по крайней мере в одном направлении движение
-// от клетки должно начинаться с фишки противника и заканчиваться фишкой игрока.
 static bool isValidMove(const Board &board, int row, int col, int player) {
     if (!inBounds(row, col) || board[row][col] != 0)
          return false;
@@ -48,8 +43,6 @@ static bool isValidMove(const Board &board, int row, int col, int player) {
     return false;
 }
 
-// Функция для вычисления списка допустимых ходов для данного игрока.
-// Переименована в calculateLegalMoves, чтобы не путаться с методом класса.
 static std::vector<std::pair<int,int>> calculateLegalMoves(const Board &board, int player) {
     std::vector<std::pair<int,int>> moves;
     for (int i = 0; i < BOARD_SIZE; i++) {
@@ -61,7 +54,6 @@ static std::vector<std::pair<int,int>> calculateLegalMoves(const Board &board, i
     return moves;
 }
 
-// Функция выполнения хода: ставим фишку игрока и переворачиваем все захваченные фишки.
 static void makeMove(Board &board, int row, int col, int player) {
     board[row][col] = player;
     for (int d = 0; d < 8; d++) {
@@ -90,7 +82,6 @@ static void makeMove(Board &board, int row, int col, int player) {
     }
 }
 
-// Простая оценочная функция: разность количества фишек.
 static int evaluate(const Board &board, int player) {
     int sum = 0;
     for (int i = 0; i < BOARD_SIZE; i++)
@@ -99,10 +90,8 @@ static int evaluate(const Board &board, int player) {
     return sum * player;
 }
 
-// Алгоритм alpha‑beta отсечения в нега-макс представлении для поиска оптимального хода.
 static int alphaBeta(Board board, int depth, int alpha, int beta, int player) {
     std::vector<std::pair<int,int>> moves = calculateLegalMoves(board, player);
-    // Если достигли необходимой глубины или ни у одного из игроков нет допустимых ходов, возвращаем оценку.
     if (depth == 0 || (moves.empty() && calculateLegalMoves(board, -player).empty()))
          return evaluate(board, player);
     if (moves.empty())
@@ -119,7 +108,6 @@ static int alphaBeta(Board board, int depth, int alpha, int beta, int player) {
     return alpha;
 }
 
-// Функция поиска лучшего хода с использованием alpha‑beta отсечения.
 static std::pair<int,int> findBestMove(const Board &board, int player, int depth) {
     std::vector<std::pair<int,int>> moves = calculateLegalMoves(board, player);
     std::pair<int,int> bestMove = {-1, -1};
@@ -137,47 +125,36 @@ static std::pair<int,int> findBestMove(const Board &board, int player, int depth
     return bestMove;
 }
 
-// ---------------- Реализация методов класса GameEngine ------------------
-
 GameEngine::GameEngine() {
     newGame(PvB, Medium);
 }
 
 void GameEngine::newGame(Mode m, Difficulty diff) {
     mode = m;
-    if (mode == BvB)
-        difficulty = Medium;  // для режима Бот против Бота—средняя сложность
-    else
-        difficulty = diff;
-    
+    if (mode == BvB) difficulty = Medium;
+    else difficulty = diff;
     switch (difficulty) {
          case Easy:   aiDepth = 3; break;
          case Medium: aiDepth = 5; break;
          case Hard:   aiDepth = 7; break;
     }
     board = initBoard();
-    currentPlayer = 1; // по умолчанию ходят золотые (бот)
+    currentPlayer = 1;
     history.clear();
     saveState();
 }
 
 bool GameEngine::playerMove(int row, int col) {
-    // Получаем список допустимых ходов для текущего игрока.
     std::vector<std::pair<int,int>> legalMoves = calculateLegalMoves(board, currentPlayer);
-
     if (!legalMoves.empty()) {
-        // Если существуют допустимые ходы, то выполняем стандартный ход.
         if (isValidMove(board, row, col, currentPlayer)) {
             makeMove(board, row, col, currentPlayer);
             currentPlayer = -currentPlayer;
             saveState();
             return true;
         }
-        // Если ход выбран неверно, ничего не делаем.
         return false;
     } else {
-        // Допустимых ходов нет.
-        // Сначала подсчитаем, присутствуют ли фишки текущего игрока на доске.
         int ownCount = 0;
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
@@ -186,45 +163,31 @@ bool GameEngine::playerMove(int row, int col) {
             }
         }
         if (ownCount > 0) {
-            // Если у игрока есть свои фишки, то он не может сделать ход – пропускаем его.
             currentPlayer = -currentPlayer;
             saveState();
-            return false; // Ход пропущен.
+            return false;
         } else {
-            // Если у игрока нет ни одной своей фишки,
-            // то он имеет право взять (перевернуть) одну фишку противника.
-            // Проверяем, что выбранная клетка занята фишкой оппонента.
             if (board[row][col] == -currentPlayer) {
                 board[row][col] = currentPlayer;
                 currentPlayer = -currentPlayer;
                 saveState();
                 return true;
             }
-            return false; // Если игрок не выбрал клетку с вражеской фишкой, ничего не делаем.
+            return false;
         }
     }
 }
 
 void GameEngine::botMove() {
-    // Получаем список допустимых ходов для текущего игрока.
     std::vector<std::pair<int,int>> legalMoves = calculateLegalMoves(board, currentPlayer);
-
     if (!legalMoves.empty()) {
-        // Если ход возможен – выбираем лучший (с использованием алгоритма alpha‑beta).
         std::pair<int,int> move;
-        if (mode == PvB)
-            move = findBestMove(board, currentPlayer, aiDepth);
-        else // Для режима "Бот против Бота" используем, например, среднюю глубину: 5.
-            move = findBestMove(board, currentPlayer, 5);
-
-        if (move.first != -1)
-            makeMove(board, move.first, move.second, currentPlayer);
-
+        move = findBestMove(board, currentPlayer, aiDepth);
+        if (move.first != -1) makeMove(board, move.first, move.second, currentPlayer);
         currentPlayer = -currentPlayer;
         saveState();
         return;
     } else {
-        // Допустимых ходов для бота нет.
         int ownCount = 0;
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
@@ -233,12 +196,10 @@ void GameEngine::botMove() {
             }
         }
         if (ownCount > 0) {
-            // Если у бота есть хотя бы одна своя фишка – ход пропускается.
             currentPlayer = -currentPlayer;
             saveState();
             return;
         } else {
-            // Если у бота нет своих фишек – он переворачивает первую найденную фишку противника.
             for (int i = 0; i < BOARD_SIZE; i++) {
                 for (int j = 0; j < BOARD_SIZE; j++) {
                     if (board[i][j] == -currentPlayer) {
@@ -264,14 +225,9 @@ std::pair<int,int> GameEngine::hintMove() {
 }
 
 void GameEngine::undoMove() {
-    // Для режима PvB проверяем, что в истории есть как минимум три состояния:
-    // 0 – начальное состояние, 1 – состояние после хода игрока (черных),
-    // 2 – состояние после хода бота (белых).
     if (mode == PvB && history.size() >= 3) {
-         // Удаляем два последних зафиксированных состояния:
-         history.pop_back(); // удаляем состояние после хода бота
-         history.pop_back(); // удаляем состояние после хода игрока
-         // Восстанавливаем состояние, которое было до этих двух ходов.
+         history.pop_back();
+         history.pop_back();
          GameState last = history.back();
          board = last.board;
          currentPlayer = last.currentPlayer;
