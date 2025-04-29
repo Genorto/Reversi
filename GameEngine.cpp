@@ -87,7 +87,7 @@ int evaluate(const Board &board, int player) {
 
 int alphaBeta(Board board, int depth, int alpha, int beta, int player) {
     std::vector<std::pair<int,int>> moves = calculateLegalMoves(board, player);
-    if (depth == 0 || (moves.empty() && calculateLegalMoves(board, -player).empty()))
+    if (depth == 0 || (moves.empty() && calculateLegalMoves(board, -player).empty())) 
         return evaluate(board, player);
     if (moves.empty())
         return -alphaBeta(board, depth, -beta, -alpha, -player);
@@ -132,7 +132,7 @@ void GameEngine::newGame(Mode m, Difficulty diff) {
         case Hard:   aiDepth = 7; break;
     }
     board = initBoard();
-    currentPlayer = 1;
+    currentPlayer = -1;
     history.clear();
     saveState();
 }
